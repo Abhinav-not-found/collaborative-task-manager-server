@@ -1,9 +1,5 @@
-import User from "../models/user.model"
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
-import { Response, Request, NextFunction } from "express"
-
-import ENV from "../lib/env"
+import { Request, Response, NextFunction } from "express"
+import { userService } from "../services/user.service"
 import { AuthRequest } from "../types/express"
 
 export const register = async (
@@ -13,30 +9,14 @@ export const register = async (
 ) => {
   try {
     const { name, email, password } = req.body
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        code: "MISSING_FIELDS",
-        message: "All fields are required",
+    const user = await userService.registerUser(name, email, password)
+    res
+      .status(201)
+      .json({
+        message: "User Registered",
+        data: { id: user._id, name: user.name, email: user.email },
       })
-    }
-
-    const userExist = await User.findOne({ email })
-
-    if (userExist) {
-      return res.status(400).json({
-        code: "EMAIL_EXISTS",
-        message: "Email already registered",
-      })
-    }
-
-    const newUser = await User.create({
-      name,
-      email,
-      password,
-    })
-
-    res.status(201).json({ message: "User Registered" })
-  } catch (error) {
+  } catch (error: any) {
     next(error)
   }
 }
@@ -48,39 +28,11 @@ export const login = async (
 ) => {
   try {
     const { email, password } = req.body
-
-    if (!email || !password) {
-      return res.status(400).json({
-        code: "MISSING_FIELDS",
-        message: "All fields are required",
-      })
-    }
-
-    const user = await User.findOne({ email })
-    if (!user) {
-      return res.status(400).json({
-        code: "INVALID_CREDENTIALS",
-        message: "Invalid email or password",
-      })
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password)
-    if (!isMatch) {
-      return res.status(400).json({
-        code: "INVALID_CREDENTIALS",
-        message: "Invalid email or password",
-      })
-    }
-
-    const token = jwt.sign(
-      { id: user._id},
-      ENV.JWT_SECRET,
-      { expiresIn: "1h" }
-    )
+    const { user, token } = await userService.loginUser(email, password)
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: ENV.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 60 * 60 * 1000,
     })
@@ -93,7 +45,7 @@ export const login = async (
         email: user.email,
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     next(error)
   }
 }
@@ -104,18 +56,13 @@ export const getUserInfo = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" })
-    }
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" })
 
-    const user = await User.findById(req.user.id).select("-password")
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" })
-    }
-
-    res.status(200).json({ data: user })
-  } catch (error) {
+    const user = await userService.getUserById(req.user.id)
+    res
+      .status(200)
+      .json({ data: { id: user._id, name: user.name, email: user.email } })
+  } catch (error: any) {
     next(error)
   }
 }
@@ -128,7 +75,7 @@ export const logout = async (
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     })
     res.status(200).json({ message: "Logged out" })

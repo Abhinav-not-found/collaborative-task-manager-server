@@ -10,6 +10,7 @@ import cookieParser from "cookie-parser";
 
 import ENV from "./lib/env";
 import userRouter from "./routes/user.route";
+import taskRouter from "./routes/task.route";
 
 const app: Application = express();
 
@@ -28,6 +29,7 @@ app.get('/', (_req: Request, res: Response) => {
   res.send('Server is running');
 });
 app.use("/user", userRouter);
+app.use("/task", taskRouter);
 
 app.use(
   (
