@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express"
 import { userService } from "../services/user.service"
 import { AuthRequest } from "../types/express"
+import { HttpError } from "../lib/HttpError"
 
 export const register = async (
   req: Request,
@@ -10,12 +11,10 @@ export const register = async (
   try {
     const { name, email, password } = req.body
     const user = await userService.registerUser(name, email, password)
-    res
-      .status(201)
-      .json({
-        message: "User Registered",
-        data: { id: user._id, name: user.name, email: user.email },
-      })
+    res.status(201).json({
+      message: "User Registered",
+      data: { id: user._id, name: user.name, email: user.email },
+    })
   } catch (error: any) {
     next(error)
   }
@@ -46,6 +45,11 @@ export const login = async (
       },
     })
   } catch (error: any) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({
+        message: error.message,
+      })
+    }
     next(error)
   }
 }
