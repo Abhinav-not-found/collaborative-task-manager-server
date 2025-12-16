@@ -16,6 +16,11 @@ export const register = async (
       data: { id: user._id, name: user.name, email: user.email },
     })
   } catch (error: any) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({
+        message: error.message,
+      })
+    }
     next(error)
   }
 }

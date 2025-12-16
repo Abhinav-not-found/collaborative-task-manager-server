@@ -20,7 +20,7 @@ export const userService = {
       throw new HttpError("All fields are required", 400)
 
     const existing = await findUserByEmail(email)
-    if (existing) throw new Error("Email already registered")
+    if (existing) throw new HttpError("Email already registered", 409)
 
     return createUser({ name, email, password })
   },
