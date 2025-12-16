@@ -25,10 +25,6 @@ const taskSchema = new Schema<ITask>(
     },
     dueDate: {
       type: Date,
-      validate: {
-        validator: (value: Date) => !value || value > new Date(),
-        message: "Due date must be in the future",
-      },
     },
     priority: {
       type: String,
