@@ -1,8 +1,18 @@
-import { createTask, deleteTaskById, findAllTasks, findTaskById } from "../repositories/task.repo"
-import { ITask } from "../models/task.model"
+import {
+  createTask,
+  deleteTaskById,
+  findAllTasks,
+  findTaskById,
+} from "../repositories/task.repo"
+import Task, { ITask } from "../models/task.model"
 
 export const taskService = {
-  createNewTask: async (data: { title: string; description: string; dueDate: Date, creatorId:string }): Promise<ITask> => {
+  createNewTask: async (data: {
+    title: string
+    description: string
+    dueDate: Date
+    creatorId: string
+  }): Promise<ITask> => {
     return createTask(data)
   },
 
@@ -14,18 +24,24 @@ export const taskService = {
     return findTaskById(id)
   },
 
-  updateTask: async (id: string, data: { title: string; description: string; dueDate: Date }): Promise<ITask | null> => {
-    const task = await findTaskById(id)
-    if (!task) return null
-    task.title = data.title
-    task.description = data.description
-    task.dueDate = data.dueDate
-    await task.save()
-    return task
+  updateTask: async (
+    id: string,
+    data: Partial<{
+      title: string
+      description: string
+      dueDate: Date
+      priority: "Low" | "Medium" | "High" | "Urgent"
+      status: "To Do" | "In Progress" | "Review" | "Completed"
+    }>
+  ): Promise<ITask | null> => {
+    return Task.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true, runValidators: true }
+    )
   },
 
-   deleteTask: async (id: string): Promise<ITask | null> => {
+  deleteTask: async (id: string): Promise<ITask | null> => {
     return deleteTaskById(id)
-  }
+  },
 }
-

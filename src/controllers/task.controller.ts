@@ -71,27 +71,30 @@ export const getOne = async (
   }
 }
 
-export const update = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const update = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params
-    const { title, description, dueDate } = req.body
+    const updateData: any = {}
 
-    if (!title || !description || !dueDate) {
-      return res.status(400).json({
-        code: "MISSING_FIELDS",
-        message: "All fields are required",
-      })
+    if (req.body.title !== undefined) updateData.title = req.body.title
+    if (req.body.description !== undefined)
+      updateData.description = req.body.description
+
+    if (req.body.dueDate !== undefined) {
+      const date = new Date(req.body.dueDate)
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ message: "Invalid dueDate" })
+      }
+      updateData.dueDate = date
     }
 
-    const updatedTask = await taskService.updateTask(id, {
-      title,
-      description,
-      dueDate: new Date(dueDate),
-    })
+    if (req.body.priority !== undefined)
+      updateData.priority = req.body.priority
+
+    if (req.body.status !== undefined)
+      updateData.status = req.body.status
+
+    const updatedTask = await taskService.updateTask(id, updateData)
 
     if (!updatedTask) {
       return res.status(404).json({
